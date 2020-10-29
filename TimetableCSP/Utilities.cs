@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 
 namespace TimetableGeneticGeneration
@@ -12,7 +11,8 @@ namespace TimetableGeneticGeneration
         public enum LessonType { Lecture, Practice };
 
         //-------------static limitations data here ------------------------
-        public static int[] _lectureAudiences;  
+        public static int[] _lectureAudiences;
+        public static Dictionary<String, List<Lesson>> _requiredLessonsSet;
 
 
         public static void LoadLectureAudiences(String dataFilename)
@@ -21,6 +21,13 @@ namespace TimetableGeneticGeneration
             using JsonDocument doc = JsonDocument.Parse(text);
             JsonElement root = doc.RootElement;
             _lectureAudiences = Utilities.GetAsObjectJSON<int[]>(root, "AudienceForLectures");
+        }
+
+
+        public static void LoadRequiredLessonsSet(String dataFilename)
+        {
+            Timetable amountSatisfying = new Timetable(dataFilename);
+            _requiredLessonsSet = amountSatisfying.GetAllLessonsSet();
         }
 
         public static int ChooseRandomly(int from, int to)
@@ -46,7 +53,7 @@ namespace TimetableGeneticGeneration
             JsonElement from = element.GetProperty(property);
             var result = new Dictionary<String, String>();
 
-            foreach(var prop in props)
+            foreach (var prop in props)
             {
                 result[prop] = JsonSerializer.Deserialize<String>(from.GetProperty(prop).GetRawText());
             }

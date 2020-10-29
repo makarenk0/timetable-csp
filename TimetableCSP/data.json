@@ -18,13 +18,13 @@
     "Subject": [ "Information retrieval", "Databases", "Machine learning", "OOP", "AI", "Web programming" ],
 
     "Specialty": [ "CS", "SE", "AP" ],
-    "CS_groups": [ "CS1", "CS2", "CS3", "CS4", "CS4" ],
-    "SE_groups": [ "SE1", "SE2", "SE3", "SE4" ],
-    "AP_groups": [ "AP1", "AP2", "AP3" ],
+    "CS_groups": [ "CS1", "CS2", "CS3" ],
+    "SE_groups": [ "SE1", "SE2", "SE3" ],
+    "AP_groups": [ "AP1", "AP2"],
 
     "CS_subjects": [ "Information retrieval", "Databases", "AI" ],
-    "SE_subjects": [ "Machine learning", "OOP", "Databases", "Web programming" ],
-    "AP_subjects": [ "OOP", "Information retrieval", "Databases", "AI" ],
+    "SE_subjects": [ "Machine learning", "OOP", "Web programming" ],
+    "AP_subjects": [ "OOP", "Information retrieval", "AI" ],
 
     "Lessons_time": [ "8:30 - 9:50", "11:40 - 13:00", "13:30 - 14:50", "15:00 - 16:20", "16:30 - 17:50", "18:00 - 19:20" ],
 

@@ -8,7 +8,7 @@ namespace TimetableGeneticGeneration
     {
         static void Main(string[] args)
         {
-            GeneticMachine gen = new GeneticMachine("../../../data.json", 15);
+            CSPMachine gen = new CSPMachine("../../../data.json", 15);
             gen.FindAnswer();
             
         }

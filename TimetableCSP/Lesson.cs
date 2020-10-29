@@ -20,9 +20,19 @@ namespace TimetableGeneticGeneration
             get { return _type; }
         }
 
+        public String Subject
+        {
+            get { return _subject; }
+        }
+
         public String Teacher
         {
             get { return _teacher; }
+        }
+
+        public String Group
+        {
+            get { return _group; }
         }
 
         public int Audience
@@ -33,6 +43,16 @@ namespace TimetableGeneticGeneration
         public Lesson()
         {
             _free = true;
+        }
+
+        public Lesson(Lesson les)
+        {
+            _free = false;
+            _type = les.LessonType;
+            _subject = les.Subject;
+            _teacher = les.Teacher;
+            _group = les.Group;
+            _audience = les.Audience;
         }
 
         public override string ToString()
@@ -66,6 +86,15 @@ namespace TimetableGeneticGeneration
             _group = group;
             _audience = audiences[Utilities.ChooseRandomly(0, audiences.Length)];
             _free = false;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is Lesson lesson &&
+                   LessonType == lesson.LessonType &&
+                   Subject == lesson.Subject &&
+                   Group == lesson.Group &&
+                   IsFree == lesson.IsFree;
         }
     }
 }
