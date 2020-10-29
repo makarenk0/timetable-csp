@@ -24,7 +24,7 @@ namespace TimetableGeneticGeneration
         {
             _startPopulation = startPopulation;
             _dataFilename = dataFilename;
-            LoadStaticLimitations(dataFilename);
+        //    LoadStaticLimitations(dataFilename);
             _generation = new List<Timetable>();
             for (int i = 0; i< _startPopulation; i++)
             {
@@ -34,11 +34,11 @@ namespace TimetableGeneticGeneration
            
         }
 
-        private void LoadStaticLimitations(String dataFilename)  //static limitations load here
-        {
-            Utilities.LoadLectureAudiences(dataFilename);
-            Utilities.LoadRequiredLessonsSet(dataFilename);
-        }
+        //private void LoadStaticLimitations(String dataFilename)  //static limitations load here
+        //{
+        //    Utilities.LoadLectureAudiences(dataFilename);
+        //    Utilities.LoadRequiredLessonsSet(dataFilename);
+        //}
 
         //private void ComputeParametrs()
         //{
@@ -78,17 +78,17 @@ namespace TimetableGeneticGeneration
 
       
 
-        public override string ToString()
-        {
-            String result = String.Concat("Generation number = ", _generationNum, "\n");
-            int i = 1;
-            foreach (var chromo in _generation)
-            {
-                result += String.Concat("Timetable ", i, " , Likelihood: ", chromo.Likelihood, " % , Fitness: ", chromo.Deviation, chromo.Deviation == 0 ? " ANSWER FOUND!!!" : "", "\n");
-                ++i;
-            }
-            result += String.Concat("Average fitness: ", currentFitness, "\n");
-            return result;
-        }
+        //public override string ToString()
+        //{
+        //    String result = String.Concat("Generation number = ", _generationNum, "\n");
+        //    int i = 1;
+        //    foreach (var chromo in _generation)
+        //    {
+        //        result += String.Concat("Timetable ", i, " , Likelihood: ", chromo.Likelihood, " % , Fitness: ", chromo.Deviation, chromo.Deviation == 0 ? " ANSWER FOUND!!!" : "", "\n");
+        //        ++i;
+        //    }
+        //    result += String.Concat("Average fitness: ", currentFitness, "\n");
+        //    return result;
+        //}
     }
 }

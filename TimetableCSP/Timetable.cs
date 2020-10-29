@@ -12,27 +12,23 @@ namespace TimetableGeneticGeneration
     {
         private Dictionary<String, WorkingWeek> _timetableRandom;
 
-
-        private Dictionary<String, DomainSet> _variables;
+        private Dictionary<Lesson, DomainSet> _variables;
 
         JsonElement root;
         
 
         public Timetable(String dataFilename)
         {
-            _timetableRandom = new Dictionary<string, WorkingWeek>();
             root = new JsonElement();
+            _timetableRandom = new Dictionary<String, WorkingWeek>();
+            _variables = new Dictionary<Lesson, DomainSet>();
+
             GenerateeTimetable(dataFilename);
         }
 
-        public Timetable(Timetable chr)
+        public Timetable(Timetable timetable)
         {
-            _timetableRandom = new Dictionary<string, WorkingWeek>(chr._timetableRandom);
-        }
-
-        public Timetable()
-        {
-            _timetableRandom = new Dictionary<string, WorkingWeek>();
+            _timetableRandom = new Dictionary<string, WorkingWeek>(timetable._timetableRandom);
         }
 
         public int AmountOfWorkingDays()
@@ -206,12 +202,13 @@ namespace TimetableGeneticGeneration
         //}
 
 
-        public Dictionary<String, List<Lesson>> FillVariables()  //required for checking amount of specific lectures/practices
+
+        public void FillVariables()  //required for checking amount of specific lectures/practices
         {
-            Dictionary<String, List<Lesson>> lessonsSet = new Dictionary<string, List<Lesson>>();
+            //Dictionary<String, List<Lesson>> lessonsSet = new Dictionary<string, List<Lesson>>();
             for (int i = 0; i < _timetableRandom.Count; i++)
             {
-                lessonsSet.Add(_timetableRandom.ElementAt(i).Key, new List<Lesson>());
+                //lessonsSet.Add(_timetableRandom.ElementAt(i).Key, new List<Lesson>());
                 WorkingWeek specialtyWeek = _timetableRandom.ElementAt(i).Value;
                 for (int j = 0; j < specialtyWeek._week.Count; j++)
                 {
@@ -220,12 +217,13 @@ namespace TimetableGeneticGeneration
                     {
                         if (!day._day.ElementAt(k).Value.IsFree)
                         {
-                            lessonsSet[_timetableRandom.ElementAt(i).Key].Add(new Lesson(day._day.ElementAt(k).Value));
+                            //lessonsSet[_timetableRandom.ElementAt(i).Key].Add(new Lesson(day._day.ElementAt(k).Value));
+                            Lesson lesson = new Lesson(day._day.ElementAt(k).Value);
+                            _variables.Add(lesson, new DomainSet(root, lesson.Subject, lesson.LessonType));
                         }
                     }
                 }
             }
-            return lessonsSet;
         }
 
 

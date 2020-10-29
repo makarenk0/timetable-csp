@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using TimetableCSP;
 
 namespace TimetableGeneticGeneration
 {
@@ -8,8 +9,8 @@ namespace TimetableGeneticGeneration
     {
         static void Main(string[] args)
         {
-            CSPMachine gen = new CSPMachine("../../../data.json", 15);
-            gen.FindAnswer();
+            //CSPMachine gen = new CSPMachine("../../../data.json", 15);
+            //gen.FindAnswer();
             
         }
     }
