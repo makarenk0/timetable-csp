@@ -31,9 +31,7 @@ namespace TimetableGeneticGeneration
                 Timetable start = new Timetable(dataFilename);
                 _generation.Add(start);
             }
-            
            
-
         }
 
         private void LoadStaticLimitations(String dataFilename)  //static limitations load here

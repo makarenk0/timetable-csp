@@ -4,54 +4,56 @@ using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Linq;
+using TimetableCSP;
 
 namespace TimetableGeneticGeneration
 {
     class Timetable
     {
-        private Dictionary<String, WorkingWeek> _timetable;
+        private Dictionary<String, WorkingWeek> _timetableRandom;
 
-       
+
+        private Dictionary<String, DomainSet> _variables;
 
         JsonElement root;
         
 
         public Timetable(String dataFilename)
         {
-            _timetable = new Dictionary<string, WorkingWeek>();
+            _timetableRandom = new Dictionary<string, WorkingWeek>();
             root = new JsonElement();
-            GenerateeChromosome(dataFilename);
+            GenerateeTimetable(dataFilename);
         }
 
         public Timetable(Timetable chr)
         {
-            _timetable = new Dictionary<string, WorkingWeek>(chr._timetable);
+            _timetableRandom = new Dictionary<string, WorkingWeek>(chr._timetableRandom);
         }
 
         public Timetable()
         {
-            _timetable = new Dictionary<string, WorkingWeek>();
+            _timetableRandom = new Dictionary<string, WorkingWeek>();
         }
 
         public int AmountOfWorkingDays()
         {
-            return _timetable.ElementAt(0).Value._week.Count;
+            return _timetableRandom.ElementAt(0).Value._week.Count;
         }
 
         public int AmountOfSpecialties()
         {
-            return _timetable.Count;
+            return _timetableRandom.Count;
         }
 
         public List<String> Specialties()
         {
-            return _timetable.Keys.ToList();
+            return _timetableRandom.Keys.ToList();
         }
 
         public override String ToString()
         {
             String toString = "";
-            foreach(var spec in _timetable)
+            foreach(var spec in _timetableRandom)
             {
                 toString += String.Concat(spec.Key, " :\n");
                 foreach (var day in spec.Value._week)
@@ -67,7 +69,7 @@ namespace TimetableGeneticGeneration
         }
 
 
-        private void GenerateeChromosome(String dataFilename)
+        private void GenerateeTimetable(String dataFilename)
         {
             if (File.Exists(dataFilename))
             {
@@ -88,13 +90,13 @@ namespace TimetableGeneticGeneration
             string[] arr = Utilities.GetAsObjectJSON<string[]>(root, "Specialty");
             foreach(var specialty in arr)
             {
-                _timetable.Add(specialty, new WorkingWeek(specialty, root));
+                _timetableRandom.Add(specialty, new WorkingWeek(specialty, root));
             }
         }
 
         //public float ComputeDeviation()
         //{
-            
+
         //    for(int i = 0; i< _timetable.Count()-1; i++)
         //    {
         //        for(int j = i + 1; j< _timetable.Count(); j++)
@@ -109,7 +111,7 @@ namespace TimetableGeneticGeneration
         //                {
         //                    var hourSpec1 = daySpec1._day.ElementAt(m).Value; //hours
         //                    var hourSpec2 = daySpec2._day.ElementAt(m).Value;
-                            
+
         //                    CheckBetweenSpecialties(hourSpec1, hourSpec2);   //check conflicts between different specialties
         //                    AudiencesTypeFitness(hourSpec1);
         //                }
@@ -169,14 +171,14 @@ namespace TimetableGeneticGeneration
         //        int rawOverLessons = currentLessonsSet[specialty].Count - requiredLessonsSet[specialty].Count;
         //        overLessons += rawOverLessons >= 0 ? rawOverLessons : 0;
         //    }
-            
+
         //    _deviation += lackLessons + overLessons;
         //}
 
 
         //public Timetable[] doubleDaysCrossover(Timetable secondParent, int crossoverLine, String specialty)
         //{
-       
+
         //    Timetable first = new Timetable(this);
         //    Timetable second = new Timetable(secondParent);
 
@@ -187,7 +189,7 @@ namespace TimetableGeneticGeneration
         //        first._timetable[_timetable.ElementAt(i).Key] = secondParent._timetable.ElementAt(i).Value;
         //    }
 
-          
+
 
         //    WorkingWeek weekFirst = new WorkingWeek(_timetable[specialty]);
         //    WorkingWeek weekSecond = new WorkingWeek(secondParent._timetable[specialty]);
@@ -204,27 +206,27 @@ namespace TimetableGeneticGeneration
         //}
 
 
-        //public Dictionary<String, List<Lesson>> GetAllLessonsSet()  //required for checking amount of specific lectures/practices
-        //{
-        //    Dictionary<String, List<Lesson>> lessonsSet = new Dictionary<string, List<Lesson>>();
-        //    for (int i = 0; i < _timetable.Count; i++)
-        //    {
-        //        lessonsSet.Add(_timetable.ElementAt(i).Key, new List<Lesson>());
-        //        WorkingWeek specialtyWeek = _timetable.ElementAt(i).Value;
-        //        for(int j = 0; j< specialtyWeek._week.Count; j++)
-        //        {
-        //            WorkingDay day = specialtyWeek._week.ElementAt(j).Value;
-        //            for(int k = 0; k< day._day.Count; k++)
-        //            {
-        //                if (!day._day.ElementAt(k).Value.IsFree)
-        //                {
-        //                    lessonsSet[_timetable.ElementAt(i).Key].Add(new Lesson(day._day.ElementAt(k).Value));
-        //                }
-        //            }
-        //        }
-        //    }
-        //    return lessonsSet;
-        //}
+        public Dictionary<String, List<Lesson>> FillVariables()  //required for checking amount of specific lectures/practices
+        {
+            Dictionary<String, List<Lesson>> lessonsSet = new Dictionary<string, List<Lesson>>();
+            for (int i = 0; i < _timetableRandom.Count; i++)
+            {
+                lessonsSet.Add(_timetableRandom.ElementAt(i).Key, new List<Lesson>());
+                WorkingWeek specialtyWeek = _timetableRandom.ElementAt(i).Value;
+                for (int j = 0; j < specialtyWeek._week.Count; j++)
+                {
+                    WorkingDay day = specialtyWeek._week.ElementAt(j).Value;
+                    for (int k = 0; k < day._day.Count; k++)
+                    {
+                        if (!day._day.ElementAt(k).Value.IsFree)
+                        {
+                            lessonsSet[_timetableRandom.ElementAt(i).Key].Add(new Lesson(day._day.ElementAt(k).Value));
+                        }
+                    }
+                }
+            }
+            return lessonsSet;
+        }
 
 
     }
