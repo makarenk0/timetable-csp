@@ -12,18 +12,20 @@ namespace TimetableGeneticGeneration
     {
         private Dictionary<String, WorkingWeek> _timetableRandom;
 
-        private Dictionary<Lesson, DomainSet> _variables;
+        private Dictionary<Variable, DomainSet> _variables;
 
         JsonElement root;
         
 
         public Timetable(String dataFilename)
         {
-            root = new JsonElement();
             _timetableRandom = new Dictionary<String, WorkingWeek>();
-            _variables = new Dictionary<Lesson, DomainSet>();
+            _variables = new Dictionary<Variable, DomainSet>();
 
             GenerateeTimetable(dataFilename);
+            DomainSet.LoadStaticLimitations(root);
+            FillVariables();
+
         }
 
         public Timetable(Timetable timetable)
@@ -71,7 +73,7 @@ namespace TimetableGeneticGeneration
             {
                 string text = File.ReadAllText(dataFilename);
                 using JsonDocument doc = JsonDocument.Parse(text);
-                root = doc.RootElement;
+                root = doc.RootElement.Clone();
                 FillForSpecialties();
             }
             else
@@ -90,125 +92,12 @@ namespace TimetableGeneticGeneration
             }
         }
 
-        //public float ComputeDeviation()
-        //{
-
-        //    for(int i = 0; i< _timetable.Count()-1; i++)
-        //    {
-        //        for(int j = i + 1; j< _timetable.Count(); j++)
-        //        {
-        //            var weekSpec1 = _timetable.ElementAt(i).Value._week;  //weeks
-        //            var weekSpec2 = _timetable.ElementAt(j).Value._week;
-        //            for (int k = 0; k < weekSpec1.Count; k++)
-        //            {
-        //                var daySpec1 = weekSpec1.ElementAt(k).Value; //days
-        //                var daySpec2 = weekSpec2.ElementAt(k).Value;
-        //                for (int m = 0; m < daySpec1._day.Count; m++)  
-        //                {
-        //                    var hourSpec1 = daySpec1._day.ElementAt(m).Value; //hours
-        //                    var hourSpec2 = daySpec2._day.ElementAt(m).Value;
-
-        //                    CheckBetweenSpecialties(hourSpec1, hourSpec2);   //check conflicts between different specialties
-        //                    AudiencesTypeFitness(hourSpec1);
-        //                }
-        //            } 
-        //        }
-        //    }
-
-        //    RequiredLessonsFitness();
-        //    return _deviation;
-        //}
-
-        //private void CheckBetweenSpecialties(Lesson hourSpec1, Lesson hourSpec2)
-        //{
-        //    if (!hourSpec1.IsFree && !hourSpec2.IsFree)
-        //    {
-        //        if (hourSpec1.Teacher == hourSpec2.Teacher)
-        //        {
-        //            ++_deviation;
-        //        }
-        //        if (hourSpec1.Audience == hourSpec2.Audience)
-        //        {
-        //            ++_deviation;
-        //        } 
-        //    }
-
-        //}
-
-        //private void AudiencesTypeFitness(Lesson hourSpec1)
-        //{
-        //    if (!hourSpec1.IsFree)
-        //    {
-        //        if (hourSpec1.LessonType == Utilities.LessonType.Lecture && !Utilities._lectureAudiences.Contains(hourSpec1.Audience))
-        //        {
-        //            ++_deviation;
-        //        }
-        //    }
-        //}
-
-
-        //private void RequiredLessonsFitness()
-        //{
-        //    Dictionary<String, List<Lesson>> currentLessonsSet = GetAllLessonsSet();
-        //    Dictionary<String, List<Lesson>> requiredLessonsSet = new Dictionary<string, List<Lesson>>(Utilities._requiredLessonsSet);
-
-        //    int lackLessons = 0;
-        //    int overLessons = 0;
-        //    for (int i = 0; i< currentLessonsSet.Count; i++)
-        //    {
-        //        String specialty = currentLessonsSet.ElementAt(i).Key;
-        //        for(int j = 0; j< requiredLessonsSet[specialty].Count; j++)
-        //        {
-        //            if(!currentLessonsSet[specialty].Contains(requiredLessonsSet[specialty].ElementAt(j)))
-        //            {
-        //                ++lackLessons;
-        //            }
-        //        }
-        //        int rawOverLessons = currentLessonsSet[specialty].Count - requiredLessonsSet[specialty].Count;
-        //        overLessons += rawOverLessons >= 0 ? rawOverLessons : 0;
-        //    }
-
-        //    _deviation += lackLessons + overLessons;
-        //}
-
-
-        //public Timetable[] doubleDaysCrossover(Timetable secondParent, int crossoverLine, String specialty)
-        //{
-
-        //    Timetable first = new Timetable(this);
-        //    Timetable second = new Timetable(secondParent);
-
-        //    for (int i = 0; _timetable.ElementAt(i).Value != _timetable[specialty]; i++)
-        //    {
-        //        second._timetable[second._timetable.ElementAt(i).Key] = _timetable.ElementAt(i).Value;
-
-        //        first._timetable[_timetable.ElementAt(i).Key] = secondParent._timetable.ElementAt(i).Value;
-        //    }
-
-
-
-        //    WorkingWeek weekFirst = new WorkingWeek(_timetable[specialty]);
-        //    WorkingWeek weekSecond = new WorkingWeek(secondParent._timetable[specialty]);
-        //    for (int j = 0; j < crossoverLine; j++)
-        //    {
-        //        weekFirst._week[weekFirst._week.ElementAt(j).Key] = secondParent._timetable[specialty]._week.ElementAt(j).Value;
-        //        weekSecond._week[weekSecond._week.ElementAt(j).Key] = _timetable[specialty]._week.ElementAt(j).Value;
-        //    }
-        //    first._timetable[specialty] = weekFirst;
-        //    second._timetable[specialty] = weekSecond;
-
-        //    return new Timetable[] { first, second };
-
-        //}
-
 
 
         public void FillVariables()  //required for checking amount of specific lectures/practices
         {
-            //Dictionary<String, List<Lesson>> lessonsSet = new Dictionary<string, List<Lesson>>();
             for (int i = 0; i < _timetableRandom.Count; i++)
             {
-                //lessonsSet.Add(_timetableRandom.ElementAt(i).Key, new List<Lesson>());
                 WorkingWeek specialtyWeek = _timetableRandom.ElementAt(i).Value;
                 for (int j = 0; j < specialtyWeek._week.Count; j++)
                 {
@@ -216,16 +105,96 @@ namespace TimetableGeneticGeneration
                     for (int k = 0; k < day._day.Count; k++)
                     {
                         if (!day._day.ElementAt(k).Value.IsFree)
-                        {
-                            //lessonsSet[_timetableRandom.ElementAt(i).Key].Add(new Lesson(day._day.ElementAt(k).Value));
-                            Lesson lesson = new Lesson(day._day.ElementAt(k).Value);
-                            _variables.Add(lesson, new DomainSet(root, lesson.Subject, lesson.LessonType));
+                        {  
+                            Variable var = new Variable(day._day.ElementAt(k).Value);
+                            _variables.Add(var, new DomainSet(root, var.Subject, var.LessonType));
                         }
                     }
                 }
             }
         }
 
+        public bool SolveByBacktracking()
+        {
+            int counter = 0, end = _variables.Count, prevStatus = 0;
+            bool couldSolve = true;
+            while(counter != end)
+            {
+                var pair = _variables.ElementAt(counter);
+                if (pair.Value.Value.Empty)
+                {
+                    pair.Value.InitValue();
+                }
+                else
+                {
+                    if(pair.Value.TriedWholeDomain()) 
+                    {
+                        if(counter == 0)  // in case of cant create timetable without conflicts
+                        {
+                            couldSolve = false;
+                            break;
+                        }
+                        pair.Value.Value.Empty = true;
+                        --counter;
+                        continue;
+                    }
+                    pair.Value.NextValue(prevStatus);
+                    prevStatus = 0;
+                }
+                while (true)
+                {
+                    int checkResult = CheckIfFeets(pair.Value.Value, pair.Key.Group, _variables.Where(x => x.Key != pair.Key).ToDictionary(p => p.Key, p => p.Value));
+                    if (checkResult == 0)
+                    {
+                        ++counter;
+                        break;
+                    }
+                    if (pair.Value.TriedWholeDomain())
+                    {
+                        
+                        pair.Value.Value.Empty = true;
+                        --counter;
+                        prevStatus = checkResult;
+                        break;
+                    }
+                    pair.Value.NextValue(checkResult);
+                }
+            }
+            Console.WriteLine(StringFromVars());
+            return couldSolve;
+        }
+
+        private int CheckIfFeets(Value value, String group, Dictionary<Variable, DomainSet> other)   //return: 0 - no conflicts, 1 - teacher conflict, 2 - audience conflict  
+        {
+            other = other.Where(x => (x.Value.Value.DayValue == value.DayValue) &&
+                                     (x.Value.Value.TimeValue == value.TimeValue) &&
+                                     (!x.Value.Value.Empty)).ToDictionary(p => p.Key, p => p.Value);
+
+            if((other.Where(x => (x.Value.Value.TeacherValue == value.TeacherValue)).ToDictionary(p => p.Key, p => p.Value)).Count != 0)
+            {
+                return 1;
+            }
+            else if((other.Where(x => (x.Value.Value.AudienceValue == value.AudienceValue)).ToDictionary(p => p.Key, p => p.Value)).Count != 0)
+            {
+                return 2;
+            }
+            else if ((other.Where(x => (x.Key.Group == group) || (x.Key.Group.Contains(group)) || (group.Contains(x.Key.Group))).ToDictionary(p => p.Key, p => p.Value)).Count != 0)
+            {
+                return 3;
+            }
+            return 0;
+        }
+
+
+        private String StringFromVars()
+        {
+            String res = "";
+            foreach(var v in _variables)
+            {
+                res = String.Concat(res, v.Key, " : ", v.Value, " \n");
+            }
+            return res;
+        }
 
     }
 }

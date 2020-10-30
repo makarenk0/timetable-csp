@@ -10,21 +10,81 @@ namespace TimetableCSP
 {
     class DomainSet
     {
-        
+
+        private Value _value;
 
         private List<String> _days;
-        private List<String> _time;
+        private List<String> _times;
         private List<int> _audiences;
         private List<String> _teachers;
 
         private static Dictionary<String, String> _subjectLecturer;
         private static List<int> _lectureAudiences;
+        private static DomainSet _fullDomain;
 
         public static void LoadStaticLimitations(JsonElement element)
         {
             _subjectLecturer = Utilities.GetAsObjectJSON(element, "Subject_lecturer", "Subject");
             _lectureAudiences = new List<int>(Utilities.GetAsObjectJSON<int[]>(element, "AudienceForLectures"));
+            _fullDomain = new DomainSet(element);
         }
+
+        public bool OutOfDomain()
+        {
+            return _days.Count == 0 && _times.Count == 0 && _audiences.Count == 0 && _teachers.Count == 0;
+        }
+
+        public bool TriedWholeDomain()
+        {
+            bool lastDayTime = _value.DayValue == _days.Last() && _value.TimeValue == _times.Last();
+            return (lastDayTime && _value.AudienceValue == _audiences.Last()) || (lastDayTime && _value.TeacherValue == _teachers.Last());
+        }
+
+        public void InitValue()
+        {
+            _value.DayValue = _days.First();
+            _value.TimeValue = _times.First();
+            _value.AudienceValue = _audiences.First();
+            _value.TeacherValue = _teachers.First();
+            _value.Empty = false;
+        }
+
+        public void NextValue(int type)
+        {
+            if(type == 1 && _value.TeacherValue != _teachers.Last())
+            {
+                _value.TeacherValue = _teachers.ElementAt(_teachers.IndexOf(_value.TeacherValue) + 1);
+            }
+            else if (type == 2 && _value.AudienceValue != _audiences.Last())
+            {
+                _value.AudienceValue = _audiences.ElementAt(_audiences.IndexOf(_value.AudienceValue) + 1);
+            }
+            else if (_value.TimeValue != _times.Last())
+            {
+                _value.TimeValue = _times.ElementAt(_times.IndexOf(_value.TimeValue) + 1);
+            }
+            else if (_value.DayValue != _days.Last())
+            {
+                _value.TimeValue = _times.First();
+                _value.DayValue = _days.ElementAt(_days.IndexOf(_value.DayValue) + 1);
+            }
+        }
+
+        public void SetDomainDefault()
+        {
+            _days = new List<String>(_fullDomain._days);
+            _times = new List<String>(_fullDomain._times);
+            _audiences = new List<int>(_fullDomain._audiences);
+            _teachers = new List<String>(_fullDomain._teachers);
+        }
+
+
+        public Value Value
+        {
+            get { return _value; }
+            set { _value = value; }
+        }
+        
 
         public List<String> Days
         {
@@ -32,10 +92,10 @@ namespace TimetableCSP
             set { _days = value; }
         }
 
-        public List<String> Time
+        public List<String> Times
         {
-            get { return _time; }
-            set { _time = value; }
+            get { return _times; }
+            set { _times = value; }
         }
 
         public List<int> Audiences
@@ -50,22 +110,19 @@ namespace TimetableCSP
             set { _teachers = value; }
         }
 
-        public DomainSet(JsonElement element, String subject, LessonType type)
+        public DomainSet(JsonElement element)
         {
             _days = new List<String>(Utilities.GetAsObjectJSON<string[]>(element, "WorkingDays"));
-            _time = new List<String>(Utilities.GetAsObjectJSON<string[]>(element, "Lessons_time"));
+            _times = new List<String>(Utilities.GetAsObjectJSON<string[]>(element, "Lessons_time"));
             _audiences = new List<int>(Utilities.GetAsObjectJSON<int[]>(element, "Audience"));
             _teachers = new List<String>(Utilities.GetAsObjectJSON<string[]>(element, "Teacher"));
 
-            CutOffStaticLimitations(subject, type);
+            _value = new Value();
         }
 
-        public DomainSet()
+        public DomainSet(JsonElement element, String subject, LessonType type) : this(element)
         {
-            _days = new List<String>();
-            _time = new List<String>();
-            _audiences = new List<int>();
-            _teachers = new List<String>();
+            CutOffStaticLimitations(subject, type);
         }
 
         private void CutOffStaticLimitations(String subject, LessonType type)
@@ -76,6 +133,11 @@ namespace TimetableCSP
                 _teachers = new List<String>() { _subjectLecturer[subject] };
             }
             
+        }
+
+        public override string ToString()
+        {
+            return String.Concat(_value.DayValue, " , ", _value.TimeValue, " , ", _value.AudienceValue, " , ", _value.TeacherValue);
         }
     }
 }

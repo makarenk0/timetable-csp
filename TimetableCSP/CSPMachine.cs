@@ -7,31 +7,20 @@ namespace TimetableGeneticGeneration
 {
     class CSPMachine
     {
-        private List<Timetable> _generation;
-        private int _generationNum = 0;
-
-        private int _startPopulation;
-
-        private const int percentageOfMutations = 45;
-
-        private float currentFitness = 0;
-        private float previousFitness;
-
+        private Timetable _timetable;
         private String _dataFilename;
 
 
-        public CSPMachine(String dataFilename, int startPopulation = 4)
+        public CSPMachine(String dataFilename)
         {
-            _startPopulation = startPopulation;
             _dataFilename = dataFilename;
-        //    LoadStaticLimitations(dataFilename);
-            _generation = new List<Timetable>();
-            for (int i = 0; i< _startPopulation; i++)
-            {
-                Timetable start = new Timetable(dataFilename);
-                _generation.Add(start);
-            }
+            _timetable = new Timetable(dataFilename);
            
+        }
+
+        public Timetable Timetable
+        {
+            get { return _timetable; }
         }
 
         //private void LoadStaticLimitations(String dataFilename)  //static limitations load here
