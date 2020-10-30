@@ -10,14 +10,17 @@ namespace TimetableCSP
 {
     class DomainSet
     {
-
+        //actual value
         private Value _value;
 
+
+        //domains
         private List<String> _days;
         private List<String> _times;
         private List<int> _audiences;
         private List<String> _teachers;
 
+        //static data and limitations
         private static Dictionary<String, String> _subjectLecturer;
         private static List<int> _lectureAudiences;
         private static DomainSet _fullDomain;
@@ -49,28 +52,30 @@ namespace TimetableCSP
             _value.Empty = false;
         }
 
-        public void NextValue(int type)
+        public void NextValue(int type)   //choosing next value (tries all possible variations of parametrs, if doesnt fit - backtracking will solve the issue)
         {
-            if(type == 1 && _value.TeacherValue != _teachers.Last())
+            if(_value.TeacherValue != _teachers.Last())
             {
                 _value.TeacherValue = _teachers.ElementAt(_teachers.IndexOf(_value.TeacherValue) + 1);
             }
-            else if (type == 2 && _value.AudienceValue != _audiences.Last())
+            else if (_value.AudienceValue != _audiences.Last())
             {
+                _value.TeacherValue = _teachers.First();   // resetting previous data element
                 _value.AudienceValue = _audiences.ElementAt(_audiences.IndexOf(_value.AudienceValue) + 1);
             }
             else if (_value.TimeValue != _times.Last())
             {
+                _value.AudienceValue = _audiences.First();  // resetting previous data element
                 _value.TimeValue = _times.ElementAt(_times.IndexOf(_value.TimeValue) + 1);
             }
             else if (_value.DayValue != _days.Last())
             {
-                _value.TimeValue = _times.First();
+                _value.TimeValue = _times.First();   // resetting previous data element
                 _value.DayValue = _days.ElementAt(_days.IndexOf(_value.DayValue) + 1);
             }
         }
 
-        public void SetDomainDefault()
+        public void SetDomainDefault()   //set default domain (all possible values)
         {
             _days = new List<String>(_fullDomain._days);
             _times = new List<String>(_fullDomain._times);

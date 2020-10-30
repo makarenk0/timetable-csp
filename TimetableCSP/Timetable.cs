@@ -151,7 +151,6 @@ namespace TimetableGeneticGeneration
                     }
                     if (pair.Value.TriedWholeDomain())
                     {
-                        
                         pair.Value.Value.Empty = true;
                         --counter;
                         prevStatus = checkResult;
