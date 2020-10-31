@@ -9,7 +9,7 @@ namespace TimetableGeneticGeneration
     {
         static void Main(string[] args)
         {
-            CSPMachine gen = new CSPMachine("../../../large_data.json");
+            CSPMachine gen = new CSPMachine("../../../middle_size_data_backtracking_test.json");
             Console.WriteLine(gen.Timetable.SolveByBacktracking());
 
         }

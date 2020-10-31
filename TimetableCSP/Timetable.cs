@@ -12,17 +12,28 @@ namespace TimetableGeneticGeneration
     {
 
         private Dictionary<Variable, DomainSet> _variables;
+        private List<int> _sequenceNumbers;
         private int _backSteps = 0;
         private int _allSteps = 0;
 
-        private const bool RANDOM_VARS_ORDER = true;
-
         JsonElement root;
+
+        private const bool RANDOM_VARS_ORDER = false;
+        const VarPickingHeuristic _pickingHeuristic = VarPickingHeuristic.NONE;
+
+        List<Variable> _staticVarSequence = Utilities.Hard1Sequence();
+
+        public enum VarPickingHeuristic 
+        {
+            NONE,
+            MRV, 
+        };
 
 
         public Timetable(String dataFilename)
         {
             _variables = new Dictionary<Variable, DomainSet>();
+            _sequenceNumbers = new List<int>();
 
             GenerateeTimetable(dataFilename);
             DomainSet.LoadStaticLimitations(root);
@@ -67,22 +78,27 @@ namespace TimetableGeneticGeneration
 
         public void FillVariables()  //required for checking amount of specific lectures/practices
         {
-            List<Variable> allLessons = new List<Variable>();
-            string[] specialties = Utilities.GetAsObjectJSON<string[]>(root, "Specialty");
-            for (int i = 0; i < specialties.Length; i++)
+            List<Variable> allLessons = _staticVarSequence;
+            if(_staticVarSequence == null)
             {
-                string[] groups = Utilities.GetAsObjectJSON<string[]>(root, String.Concat(specialties[i], "_", "groups"));
-                for (int j = 0; j < groups.Length + 1; j++)
+                allLessons = new List<Variable>();
+                string[] specialties = Utilities.GetAsObjectJSON<string[]>(root, "Specialty");
+                for (int i = 0; i < specialties.Length; i++)
                 {
-                    String group = (j == groups.Length) ? String.Join(", ", groups) : groups[j];
-                    LessonType type = (j == groups.Length) ? LessonType.Lecture : LessonType.Practice;
-                    string[] subjects = Utilities.GetAsObjectJSON<string[]>(root, String.Concat(specialties[i], "_", "subjects"));
-                    for (int k = 0; k < subjects.Length; k++)
+                    string[] groups = Utilities.GetAsObjectJSON<string[]>(root, String.Concat(specialties[i], "_", "groups"));
+                    for (int j = 0; j < groups.Length + 1; j++)
                     {
-                        allLessons.Add(new Variable(type, subjects[k], group));
+                        String group = (j == groups.Length) ? String.Join(", ", groups) : groups[j];
+                        LessonType type = (j == groups.Length) ? LessonType.Lecture : LessonType.Practice;
+                        string[] subjects = Utilities.GetAsObjectJSON<string[]>(root, String.Concat(specialties[i], "_", "subjects"));
+                        for (int k = 0; k < subjects.Length; k++)
+                        {
+                            allLessons.Add(new Variable(type, subjects[k], group));
+                        }
                     }
                 }
             }
+            
 
             int n = allLessons.Count;
             for (int i = 0; i < n; i++)
@@ -106,7 +122,7 @@ namespace TimetableGeneticGeneration
             while (counter != end)
             {
                 ++_allSteps;
-                var pair = _variables.ElementAt(counter);
+                var pair = _variables.ElementAt(HeuristicVariablePick(counter));
                 if (pair.Value.Value.Empty)
                 {
                     pair.Value.InitValue();
@@ -165,6 +181,55 @@ namespace TimetableGeneticGeneration
             return true;
         }
 
+        private int CountConflictsNumber(DomainSet set, Dictionary<Variable, DomainSet> other)
+        {
+            int conflictsN = 0;
+            other = other.Where(x => !x.Value.Value.Empty).ToDictionary(p => p.Key, p => p.Value);
+            foreach(var p in other)
+            {
+                if (set.CanConstruct(p.Value.Value))
+                {
+                    ++conflictsN;
+                }
+            }
+            return conflictsN;
+        }
+
+
+        private int HeuristicVariablePick(int counter)
+        {
+            switch (_pickingHeuristic)
+            {    
+                case VarPickingHeuristic.MRV:
+                    return MRVHeuristic(counter);
+                default:
+                    return counter;
+
+            }
+              
+        }
+
+        private int MRVHeuristic(int counter)
+        {
+            Dictionary<Variable, DomainSet> _emptyVars = _variables.Where(x => x.Value.Value.Empty).ToDictionary(p => p.Key, p => p.Value);
+            if (counter >= _sequenceNumbers.Count)
+            {
+                KeyValuePair<Variable, DomainSet> minPossiblePair = _emptyVars.First();
+                int possibleValues = minPossiblePair.Value.PossibleDomainVariationsNumber() - CountConflictsNumber(minPossiblePair.Value, _variables);
+
+                foreach (var p in _emptyVars)
+                {
+                    int newPossibleValues = p.Value.PossibleDomainVariationsNumber() - CountConflictsNumber(p.Value, _variables);
+                    if (newPossibleValues < possibleValues)
+                    {
+                        possibleValues = newPossibleValues;
+                        minPossiblePair = p;
+                    }
+                }
+                _sequenceNumbers.Add(_variables.Keys.ToList().IndexOf(minPossiblePair.Key));
+            }
+            return _sequenceNumbers.ElementAt(counter);
+        }
 
         private String StringFromVars()
         {

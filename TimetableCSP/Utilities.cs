@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text.Json;
+using TimetableCSP;
 
 namespace TimetableGeneticGeneration
 {
@@ -10,16 +11,6 @@ namespace TimetableGeneticGeneration
     {
         public enum LessonType { Lecture, Practice };
 
-        //-------------static limitations data here ------------------------
-      
-        public static Dictionary<String, List<Lesson>> _requiredLessonsSet;
-
-
-        //public static void LoadRequiredLessonsSet(String dataFilename)
-        //{
-        //    Timetable amountSatisfying = new Timetable(dataFilename);
-        //    _requiredLessonsSet = amountSatisfying.GetAllLessonsSet();
-        //}
 
         public static int ChooseRandomly(int from, int to)
         {
@@ -51,6 +42,43 @@ namespace TimetableGeneticGeneration
 
             return result;
         }
+
+        public static List<Variable> Hard1Sequence()  // 10378 steps, 5183 back steps using pure backtracking
+        {
+            List<Variable> hardSequence = new List<Variable>();
+            hardSequence.Add(new Variable(LessonType.Practice, "Databases", "SE1"));
+            hardSequence.Add(new Variable(LessonType.Practice, "Information retrieval", "SE1"));
+            hardSequence.Add(new Variable(LessonType.Practice, "Information retrieval", "CS1"));
+            hardSequence.Add(new Variable(LessonType.Practice, "Information retrieval", "SE2"));
+            hardSequence.Add(new Variable(LessonType.Lecture, "Databases", "CS1, CS2"));
+            hardSequence.Add(new Variable(LessonType.Practice, "Information retrieval", "CS2"));
+            hardSequence.Add(new Variable(LessonType.Lecture, "Information retrieval", "CS1, CS2"));
+            hardSequence.Add(new Variable(LessonType.Practice, "Databases", "CS1"));
+            hardSequence.Add(new Variable(LessonType.Lecture, "Databases", "SE1, SE2"));
+            hardSequence.Add(new Variable(LessonType.Lecture, "Information retrieval", "SE1, SE2"));
+            hardSequence.Add(new Variable(LessonType.Practice, "Databases", "CS2"));
+            hardSequence.Add(new Variable(LessonType.Practice, "Databases", "SE2"));
+            return hardSequence;
+        }
+
+        public static List<Variable> Hard2Sequence()  // 10378 steps, 5183 back steps using pure backtracking
+        {
+            List<Variable> hardSequence = new List<Variable>();
+            hardSequence.Add(new Variable(LessonType.Lecture, "Information retrieval", "SE1, SE2"));
+            hardSequence.Add(new Variable(LessonType.Lecture, "Databases", "CS1, CS2"));
+            hardSequence.Add(new Variable(LessonType.Practice, "Information retrieval", "CS2"));
+            hardSequence.Add(new Variable(LessonType.Practice, "Information retrieval", "SE1"));
+            hardSequence.Add(new Variable(LessonType.Practice, "Databases", "SE2"));
+            hardSequence.Add(new Variable(LessonType.Practice, "Databases", "CS2"));
+            hardSequence.Add(new Variable(LessonType.Lecture, "Databases", "SE1, SE2"));
+            hardSequence.Add(new Variable(LessonType.Lecture, "Information retrieval", "CS1, CS2"));
+            hardSequence.Add(new Variable(LessonType.Practice, "Information retrieval", "SE2"));
+            hardSequence.Add(new Variable(LessonType.Practice, "Databases", "SE1"));  
+            hardSequence.Add(new Variable(LessonType.Practice, "Information retrieval", "CS1"));
+            hardSequence.Add(new Variable(LessonType.Practice, "Databases", "CS1"));
+            return hardSequence;
+        }
+
 
     }
 }

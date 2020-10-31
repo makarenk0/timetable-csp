@@ -32,6 +32,11 @@ namespace TimetableCSP
             _fullDomain = new DomainSet(element);
         }
 
+        public int PossibleDomainVariationsNumber()
+        {
+            return _days.Count * _times.Count * _audiences.Count * _teachers.Count;
+        }
+
         public bool OutOfDomain()
         {
             return _days.Count == 0 && _times.Count == 0 && _audiences.Count == 0 && _teachers.Count == 0;
@@ -50,6 +55,11 @@ namespace TimetableCSP
             _value.AudienceValue = _audiences.First();
             _value.TeacherValue = _teachers.First();
             _value.Empty = false;
+        }
+
+        public bool CanConstruct(Value val)
+        {
+            return _days.Contains(val.DayValue) && _times.Contains(val.TimeValue) && _teachers.Contains(val.TeacherValue) && _audiences.Contains(val.AudienceValue);
         }
 
         public void NextValue()   //choosing next value (tries all possible variations of parametrs, if doesnt fit - backtracking will solve the issue)
