@@ -19,14 +19,15 @@ namespace TimetableGeneticGeneration
         JsonElement root;
 
         private const bool RANDOM_VARS_ORDER = false;
-        const VarPickingHeuristic _pickingHeuristic = VarPickingHeuristic.NONE;
+        const VarPickingHeuristic _pickingVarHeuristic = VarPickingHeuristic.LDH;
 
-        List<Variable> _staticVarSequence = Utilities.Hard1Sequence();
+        List<Variable> _staticVarSequence = Utilities.Hard2Sequence();
 
         public enum VarPickingHeuristic 
         {
             NONE,
-            MRV, 
+            MRV,   // Minimum remaining values
+            LDH,    // Largest degree heuristic
         };
 
 
@@ -198,10 +199,12 @@ namespace TimetableGeneticGeneration
 
         private int HeuristicVariablePick(int counter)
         {
-            switch (_pickingHeuristic)
+            switch (_pickingVarHeuristic)
             {    
                 case VarPickingHeuristic.MRV:
                     return MRVHeuristic(counter);
+                case VarPickingHeuristic.LDH:
+                    return LDHeuristic(counter);
                 default:
                     return counter;
 
@@ -223,6 +226,24 @@ namespace TimetableGeneticGeneration
                     if (newPossibleValues < possibleValues)
                     {
                         possibleValues = newPossibleValues;
+                        minPossiblePair = p;
+                    }
+                }
+                _sequenceNumbers.Add(_variables.Keys.ToList().IndexOf(minPossiblePair.Key));
+            }
+            return _sequenceNumbers.ElementAt(counter);
+        }
+
+        private int LDHeuristic(int counter)
+        {
+            Dictionary<Variable, DomainSet> _emptyVars = _variables.Where(x => x.Value.Value.Empty).ToDictionary(p => p.Key, p => p.Value);
+            if (counter >= _sequenceNumbers.Count)
+            {
+                KeyValuePair<Variable, DomainSet> minPossiblePair = _emptyVars.First();
+                foreach (var p in _emptyVars)
+                {
+                    if (p.Key.LessonType == LessonType.Lecture || _emptyVars.Keys.ToList().IndexOf(p.Key) == _emptyVars.Count - 1)
+                    {
                         minPossiblePair = p;
                     }
                 }
