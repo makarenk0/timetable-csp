@@ -24,6 +24,15 @@ namespace TimetableCSP
 
         }
 
+        public Value(Value value)
+        {
+            DayValue = value.DayValue;
+            TimeValue = value.TimeValue;
+            AudienceValue = value.AudienceValue;
+            TeacherValue = value.TeacherValue;
+            Empty = false;
+        }
+
         public String DayValue
         {
             get { return _dayValue; }
@@ -46,6 +55,23 @@ namespace TimetableCSP
         {
             get { return _teacherValue; }
             set { _teacherValue = value; }
+        }
+
+        public override bool Equals(object obj)
+        {
+            var item = obj as Value;
+
+            if (item == null)
+            {
+                return false;
+            }
+            bool sameDateTime = (_dayValue == item.DayValue) && (_timeValue == item.TimeValue);
+            return (sameDateTime && (_audienceValue == item.AudienceValue)) && (sameDateTime && (_teacherValue == item.TeacherValue));
+        }
+
+        public override int GetHashCode()
+        {
+            return this.GetHashCode();
         }
     }
 }

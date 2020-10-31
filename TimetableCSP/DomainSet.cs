@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using TimetableGeneticGeneration;
+using static TimetableGeneticGeneration.Timetable;
 using static TimetableGeneticGeneration.Utilities;
 
 namespace TimetableCSP
@@ -25,6 +26,9 @@ namespace TimetableCSP
         private static List<int> _lectureAudiences;
         private static DomainSet _fullDomain;
 
+        private List<Value> _possibleValues;
+
+
         public static void LoadStaticLimitations(JsonElement element)
         {
             _subjectLecturer = Utilities.GetAsObjectJSON(element, "Subject_lecturer", "Subject");
@@ -42,10 +46,22 @@ namespace TimetableCSP
             return _days.Count == 0 && _times.Count == 0 && _audiences.Count == 0 && _teachers.Count == 0;
         }
 
-        public bool TriedWholeDomain()
+        public bool TriedWholeDomain(ValuePickingHeuristic heuristic)
         {
-            bool lastDayTime = _value.DayValue == _days.Last() && _value.TimeValue == _times.Last();
-            return (lastDayTime && _value.AudienceValue == _audiences.Last() && _value.TeacherValue == _teachers.Last());
+            switch (heuristic)
+            {
+                case ValuePickingHeuristic.LCV:
+                    if(_possibleValues.Count == 0)
+                    {
+                        FillPossibleValues();
+                        return true;
+                    }
+                    return false;
+                default:
+                    bool lastDayTime = _value.DayValue == _days.Last() && _value.TimeValue == _times.Last();
+                    return (lastDayTime && _value.AudienceValue == _audiences.Last() && _value.TeacherValue == _teachers.Last());
+            }
+           
         }
 
         public void InitValue()
@@ -62,9 +78,63 @@ namespace TimetableCSP
             return _days.Contains(val.DayValue) && _times.Contains(val.TimeValue) && _teachers.Contains(val.TeacherValue) && _audiences.Contains(val.AudienceValue);
         }
 
-        public void NextValue()   //choosing next value (tries all possible variations of parametrs, if doesnt fit - backtracking will solve the issue)
+        public void NextValue(ValuePickingHeuristic heuristic, Dictionary<Variable, DomainSet> emptyVars)   
         {
-            if(_value.TeacherValue != _teachers.Last())
+            switch (heuristic)
+            {
+                case ValuePickingHeuristic.LCV:
+                    LCVPicking(emptyVars);
+                    break;
+                default:
+                    StepByStepPicking();
+                    break;
+            }
+           
+        }
+
+        private void LCVPicking(Dictionary<Variable, DomainSet> emptyVars)  //TO DO optimize and check for bugs
+        {
+            if(_possibleValues.Count == 1)
+            {
+                _value = new Value(_possibleValues.ElementAt(0));
+                _value.Empty = false;
+                _possibleValues.Remove(_value);
+            }
+            else
+            {
+                int intersectCount = -1;
+                foreach (var p in _possibleValues)
+                {
+                    int newIntersectCount = 0;
+                    foreach (var k in emptyVars)
+                    {
+                        newIntersectCount += k.Value.PossibleValues.Count(el => el.Equals(p));
+                    }
+
+                    if (intersectCount == -1)
+                    {
+                        _value = new Value(p);
+                        intersectCount = newIntersectCount;
+                    }
+                    else if (newIntersectCount < intersectCount)
+                    {
+                        _value = new Value(p);
+                        _value.Empty = false;
+                        intersectCount = newIntersectCount;
+                    }
+                    else if (newIntersectCount == 0)
+                    {
+                        _value = new Value(p);
+                    }
+                }
+                _possibleValues.Remove(_value);
+            }
+            
+        }
+
+        private void StepByStepPicking() //choosing next value (tries all possible variations of parametrs, if doesnt fit - backtracking will solve the issue)
+        {
+            if (_value.TeacherValue != _teachers.Last())
             {
                 _value.TeacherValue = _teachers.ElementAt(_teachers.IndexOf(_value.TeacherValue) + 1);
             }
@@ -85,12 +155,13 @@ namespace TimetableCSP
             }
         }
 
-        public void SetDomainDefault()   //set default domain (all possible values)
+        public void SetDomainDefault(String subject, LessonType type)   //set default domain (all possible values)
         {
             _days = new List<String>(_fullDomain._days);
             _times = new List<String>(_fullDomain._times);
             _audiences = new List<int>(_fullDomain._audiences);
             _teachers = new List<String>(_fullDomain._teachers);
+            CutOffStaticLimitations(subject, type);
         }
 
 
@@ -125,6 +196,12 @@ namespace TimetableCSP
             set { _teachers = value; }
         }
 
+        public List<Value> PossibleValues
+        {
+            get { return _possibleValues; }
+            set { _possibleValues = value; }
+        }
+
         public DomainSet(JsonElement element)
         {
             _days = new List<String>(Utilities.GetAsObjectJSON<string[]>(element, "WorkingDays"));
@@ -135,9 +212,27 @@ namespace TimetableCSP
             _value = new Value();
         }
 
-        public DomainSet(JsonElement element, String subject, LessonType type) : this(element)
+        public DomainSet(JsonElement element, String subject, LessonType type, ValuePickingHeuristic heuristic) : this(element)
         {
             CutOffStaticLimitations(subject, type);
+
+            if(heuristic != ValuePickingHeuristic.NONE)
+            {
+                FillPossibleValues();
+            }
+        }
+
+        private void FillPossibleValues()
+        {
+            _possibleValues = new List<Value>();
+            InitValue();
+            _possibleValues.Add(new Value(Value));
+            while (!TriedWholeDomain(ValuePickingHeuristic.NONE))
+            {
+                StepByStepPicking();
+                _possibleValues.Add(new Value(Value));
+            }
+            _value.Empty = true;
         }
 
         private void CutOffStaticLimitations(String subject, LessonType type)
