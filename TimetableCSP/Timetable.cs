@@ -19,8 +19,10 @@ namespace TimetableGeneticGeneration
         JsonElement root;
 
         private const bool RANDOM_VARS_ORDER = false;
+
         const VarPickingHeuristic _pickingVarHeuristic = VarPickingHeuristic.NONE;
         const ValuePickingHeuristic _pickingValueHeuristic = ValuePickingHeuristic.NONE;
+        const FilteringHeuristic _filteringHeuristic = FilteringHeuristic.ForwardChecking;
 
         List<Variable> _staticVarSequence = Utilities.Hard1Sequence();
 
@@ -35,6 +37,13 @@ namespace TimetableGeneticGeneration
         {
             NONE,
             LCV,   // least constraining value
+        };
+
+        public enum FilteringHeuristic
+        {
+            NONE,
+            ForwardChecking,
+            ConstraintPropagation,
         };
 
 
@@ -116,7 +125,7 @@ namespace TimetableGeneticGeneration
                 {
                     number = Utilities.ChooseRandomly(0, allLessons.Count);
                 }
-                _variables.Add(allLessons[number], new DomainSet(root, allLessons[number].Subject, allLessons[number].LessonType, _pickingValueHeuristic));
+                _variables.Add(allLessons[number], new DomainSet(root, allLessons[number].Subject, allLessons[number].LessonType, _pickingValueHeuristic, _filteringHeuristic));
                 allLessons.RemoveAt(number);
             }
 
@@ -137,7 +146,7 @@ namespace TimetableGeneticGeneration
                 }
                 else
                 {
-                    if (pair.Value.TriedWholeDomain(_pickingValueHeuristic))
+                    if (pair.Value.TriedWholeDomain(_pickingValueHeuristic, _filteringHeuristic))
                     {
                         if (counter == 0)  // in case of cant create timetable without conflicts
                         {
@@ -149,7 +158,7 @@ namespace TimetableGeneticGeneration
                         ++_backSteps;
                         continue;
                     }
-                    pair.Value.NextValue(_pickingValueHeuristic, _variables.Where(p => p.Value.Value.Empty).ToDictionary(e => e.Key, e => e.Value));
+                    pair.Value.NextValue(_pickingValueHeuristic, _filteringHeuristic, _variables.Where(p => p.Value.Value.Empty).ToDictionary(e => e.Key, e => e.Value));
 
                 }
                 while (true)
@@ -159,14 +168,14 @@ namespace TimetableGeneticGeneration
                         ++counter;
                         break;
                     }
-                    if (pair.Value.TriedWholeDomain(_pickingValueHeuristic))
+                    if (pair.Value.TriedWholeDomain(_pickingValueHeuristic, _filteringHeuristic))
                     {
                         pair.Value.Value.Empty = true;
                         --counter;
                         ++_backSteps;
                         break;
                     }
-                    pair.Value.NextValue(_pickingValueHeuristic, _variables.Where(p => p.Value.Value.Empty).ToDictionary(e => e.Key, e => e.Value));
+                    pair.Value.NextValue(_pickingValueHeuristic, _filteringHeuristic, _variables.Where(p => p.Value.Value.Empty).ToDictionary(e => e.Key, e => e.Value));
                 }
             }
             Console.WriteLine(StringFromVars());

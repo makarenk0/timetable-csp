@@ -11,6 +11,7 @@ namespace TimetableGeneticGeneration
         {
             CSPMachine gen = new CSPMachine("../../../middle_size_data_backtracking_test.json");
             Console.WriteLine(gen.Timetable.SolveByBacktracking());
+           
 
         }
     }

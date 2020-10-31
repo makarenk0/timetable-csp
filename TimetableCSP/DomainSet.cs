@@ -46,8 +46,18 @@ namespace TimetableCSP
             return _days.Count == 0 && _times.Count == 0 && _audiences.Count == 0 && _teachers.Count == 0;
         }
 
-        public bool TriedWholeDomain(ValuePickingHeuristic heuristic)
+        public bool TriedWholeDomain(ValuePickingHeuristic heuristic, FilteringHeuristic filtering)  //TO DO: reduce code
         {
+            if(filtering != FilteringHeuristic.NONE)
+            {
+                if (_possibleValues.Count == 0)
+                {
+                    FillPossibleValues();
+                    return true;
+                }
+                return false;
+            }
+
             switch (heuristic)
             {
                 case ValuePickingHeuristic.LCV:
@@ -78,7 +88,7 @@ namespace TimetableCSP
             return _days.Contains(val.DayValue) && _times.Contains(val.TimeValue) && _teachers.Contains(val.TeacherValue) && _audiences.Contains(val.AudienceValue);
         }
 
-        public void NextValue(ValuePickingHeuristic heuristic, Dictionary<Variable, DomainSet> emptyVars)   
+        public void NextValue(ValuePickingHeuristic heuristic, FilteringHeuristic filtering, Dictionary<Variable, DomainSet> emptyVars)   
         {
             switch (heuristic)
             {
@@ -86,7 +96,19 @@ namespace TimetableCSP
                     LCVPicking(emptyVars);
                     break;
                 default:
-                    StepByStepPicking();
+                    StepByStepPicking(filtering);
+                    break;
+            }
+
+            switch (filtering)
+            {
+                case FilteringHeuristic.ForwardChecking:
+                    foreach(var k in new List<Variable>(emptyVars.Keys))
+                    {
+                        emptyVars[k]._possibleValues = emptyVars[k]._possibleValues.Where(x => (!x.Equals(_value))).ToList();
+                    }
+                    break;
+                default:
                     break;
             }
            
@@ -132,27 +154,36 @@ namespace TimetableCSP
             
         }
 
-        private void StepByStepPicking() //choosing next value (tries all possible variations of parametrs, if doesnt fit - backtracking will solve the issue)
+        private void StepByStepPicking(FilteringHeuristic filtering) //choosing next value (tries all possible variations of parametrs, if doesnt fit - backtracking will solve the issue)
         {
-            if (_value.TeacherValue != _teachers.Last())
+            if(filtering == FilteringHeuristic.NONE)
             {
-                _value.TeacherValue = _teachers.ElementAt(_teachers.IndexOf(_value.TeacherValue) + 1);
+                if (_value.TeacherValue != _teachers.Last())
+                {
+                    _value.TeacherValue = _teachers.ElementAt(_teachers.IndexOf(_value.TeacherValue) + 1);
+                }
+                else if (_value.AudienceValue != _audiences.Last())
+                {
+                    _value.TeacherValue = _teachers.First();   // resetting previous data element
+                    _value.AudienceValue = _audiences.ElementAt(_audiences.IndexOf(_value.AudienceValue) + 1);
+                }
+                else if (_value.TimeValue != _times.Last())
+                {
+                    _value.AudienceValue = _audiences.First();  // resetting previous data element
+                    _value.TimeValue = _times.ElementAt(_times.IndexOf(_value.TimeValue) + 1);
+                }
+                else if (_value.DayValue != _days.Last())
+                {
+                    _value.TimeValue = _times.First();   // resetting previous data element
+                    _value.DayValue = _days.ElementAt(_days.IndexOf(_value.DayValue) + 1);
+                }
             }
-            else if (_value.AudienceValue != _audiences.Last())
+            else
             {
-                _value.TeacherValue = _teachers.First();   // resetting previous data element
-                _value.AudienceValue = _audiences.ElementAt(_audiences.IndexOf(_value.AudienceValue) + 1);
+                _value = new Value(_possibleValues.First());
+                _possibleValues.RemoveAt(0);
             }
-            else if (_value.TimeValue != _times.Last())
-            {
-                _value.AudienceValue = _audiences.First();  // resetting previous data element
-                _value.TimeValue = _times.ElementAt(_times.IndexOf(_value.TimeValue) + 1);
-            }
-            else if (_value.DayValue != _days.Last())
-            {
-                _value.TimeValue = _times.First();   // resetting previous data element
-                _value.DayValue = _days.ElementAt(_days.IndexOf(_value.DayValue) + 1);
-            }
+            
         }
 
         public void SetDomainDefault(String subject, LessonType type)   //set default domain (all possible values)
@@ -212,11 +243,11 @@ namespace TimetableCSP
             _value = new Value();
         }
 
-        public DomainSet(JsonElement element, String subject, LessonType type, ValuePickingHeuristic heuristic) : this(element)
+        public DomainSet(JsonElement element, String subject, LessonType type, ValuePickingHeuristic heuristic, FilteringHeuristic filtering) : this(element)
         {
             CutOffStaticLimitations(subject, type);
 
-            if(heuristic != ValuePickingHeuristic.NONE)
+            if(heuristic != ValuePickingHeuristic.NONE || filtering != FilteringHeuristic.NONE)
             {
                 FillPossibleValues();
             }
@@ -227,9 +258,9 @@ namespace TimetableCSP
             _possibleValues = new List<Value>();
             InitValue();
             _possibleValues.Add(new Value(Value));
-            while (!TriedWholeDomain(ValuePickingHeuristic.NONE))
+            while (!TriedWholeDomain(ValuePickingHeuristic.NONE, FilteringHeuristic.NONE))
             {
-                StepByStepPicking();
+                StepByStepPicking(FilteringHeuristic.NONE);
                 _possibleValues.Add(new Value(Value));
             }
             _value.Empty = true;
