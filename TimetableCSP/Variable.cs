@@ -35,6 +35,15 @@ namespace TimetableCSP
             _group = les.Group;     
         }
 
+        public Variable(LessonType type, String subject, String group)
+        {
+
+            _type = type;
+            _subject = subject;
+            _group = group;
+        }
+
+
         public override string ToString()
         {
             return String.Concat(_type == LessonType.Lecture ? "Lecture" : "Practice", " , ", _subject, " , ", _group);

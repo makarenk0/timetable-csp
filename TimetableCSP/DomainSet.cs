@@ -40,7 +40,7 @@ namespace TimetableCSP
         public bool TriedWholeDomain()
         {
             bool lastDayTime = _value.DayValue == _days.Last() && _value.TimeValue == _times.Last();
-            return (lastDayTime && _value.AudienceValue == _audiences.Last()) || (lastDayTime && _value.TeacherValue == _teachers.Last());
+            return (lastDayTime && _value.AudienceValue == _audiences.Last() && _value.TeacherValue == _teachers.Last());
         }
 
         public void InitValue()
@@ -52,7 +52,7 @@ namespace TimetableCSP
             _value.Empty = false;
         }
 
-        public void NextValue(int type)   //choosing next value (tries all possible variations of parametrs, if doesnt fit - backtracking will solve the issue)
+        public void NextValue()   //choosing next value (tries all possible variations of parametrs, if doesnt fit - backtracking will solve the issue)
         {
             if(_value.TeacherValue != _teachers.Last())
             {

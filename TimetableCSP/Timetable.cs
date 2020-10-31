@@ -1,25 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
-using System.Text.Json;
 using System.Linq;
+using System.Text.Json;
 using TimetableCSP;
+using static TimetableGeneticGeneration.Utilities;
 
 namespace TimetableGeneticGeneration
 {
     class Timetable
     {
-        private Dictionary<String, WorkingWeek> _timetableRandom;
 
         private Dictionary<Variable, DomainSet> _variables;
+        private int _backSteps = 0;
+        private int _allSteps = 0;
+
+        private const bool RANDOM_VARS_ORDER = true;
 
         JsonElement root;
-        
+
 
         public Timetable(String dataFilename)
         {
-            _timetableRandom = new Dictionary<String, WorkingWeek>();
             _variables = new Dictionary<Variable, DomainSet>();
 
             GenerateeTimetable(dataFilename);
@@ -28,42 +30,22 @@ namespace TimetableGeneticGeneration
 
         }
 
-        public Timetable(Timetable timetable)
-        {
-            _timetableRandom = new Dictionary<string, WorkingWeek>(timetable._timetableRandom);
-        }
-
-        public int AmountOfWorkingDays()
-        {
-            return _timetableRandom.ElementAt(0).Value._week.Count;
-        }
-
-        public int AmountOfSpecialties()
-        {
-            return _timetableRandom.Count;
-        }
-
-        public List<String> Specialties()
-        {
-            return _timetableRandom.Keys.ToList();
-        }
-
         public override String ToString()
         {
-            String toString = "";
-            foreach(var spec in _timetableRandom)
-            {
-                toString += String.Concat(spec.Key, " :\n");
-                foreach (var day in spec.Value._week)
-                {
-                    toString += String.Concat(" ", day.Key, " :\n");
-                    foreach (var hours in day.Value._day)
-                    {
-                        toString += String.Concat("  ", hours.Key, " : ", hours.Value.ToString(), "\n");
-                    }
-                }
-            }
-            return toString;
+            //String toString = "";
+            //foreach(var spec in _timetableRandom)
+            //{
+            //    toString += String.Concat(spec.Key, " :\n");
+            //    foreach (var day in spec.Value._week)
+            //    {
+            //        toString += String.Concat(" ", day.Key, " :\n");
+            //        foreach (var hours in day.Value._day)
+            //        {
+            //            toString += String.Concat("  ", hours.Key, " : ", hours.Value.ToString(), "\n");
+            //        }
+            //    }
+            //}
+            return "";
         }
 
 
@@ -74,7 +56,6 @@ namespace TimetableGeneticGeneration
                 string text = File.ReadAllText(dataFilename);
                 using JsonDocument doc = JsonDocument.Parse(text);
                 root = doc.RootElement.Clone();
-                FillForSpecialties();
             }
             else
             {
@@ -83,43 +64,48 @@ namespace TimetableGeneticGeneration
         }
 
 
-        private void FillForSpecialties()
-        {
-            string[] arr = Utilities.GetAsObjectJSON<string[]>(root, "Specialty");
-            foreach(var specialty in arr)
-            {
-                _timetableRandom.Add(specialty, new WorkingWeek(specialty, root));
-            }
-        }
-
-
 
         public void FillVariables()  //required for checking amount of specific lectures/practices
         {
-            for (int i = 0; i < _timetableRandom.Count; i++)
+            List<Variable> allLessons = new List<Variable>();
+            string[] specialties = Utilities.GetAsObjectJSON<string[]>(root, "Specialty");
+            for (int i = 0; i < specialties.Length; i++)
             {
-                WorkingWeek specialtyWeek = _timetableRandom.ElementAt(i).Value;
-                for (int j = 0; j < specialtyWeek._week.Count; j++)
+                string[] groups = Utilities.GetAsObjectJSON<string[]>(root, String.Concat(specialties[i], "_", "groups"));
+                for (int j = 0; j < groups.Length + 1; j++)
                 {
-                    WorkingDay day = specialtyWeek._week.ElementAt(j).Value;
-                    for (int k = 0; k < day._day.Count; k++)
+                    String group = (j == groups.Length) ? String.Join(", ", groups) : groups[j];
+                    LessonType type = (j == groups.Length) ? LessonType.Lecture : LessonType.Practice;
+                    string[] subjects = Utilities.GetAsObjectJSON<string[]>(root, String.Concat(specialties[i], "_", "subjects"));
+                    for (int k = 0; k < subjects.Length; k++)
                     {
-                        if (!day._day.ElementAt(k).Value.IsFree)
-                        {  
-                            Variable var = new Variable(day._day.ElementAt(k).Value);
-                            _variables.Add(var, new DomainSet(root, var.Subject, var.LessonType));
-                        }
+                        allLessons.Add(new Variable(type, subjects[k], group));
                     }
                 }
             }
+
+            int n = allLessons.Count;
+            for (int i = 0; i < n; i++)
+            {
+                int number = 0;
+                if (RANDOM_VARS_ORDER)
+                {
+                    number = Utilities.ChooseRandomly(0, allLessons.Count);
+                }
+                _variables.Add(allLessons[number], new DomainSet(root, allLessons[number].Subject, allLessons[number].LessonType));
+                allLessons.RemoveAt(number);
+            }
+
+
         }
 
         public bool SolveByBacktracking()
         {
-            int counter = 0, end = _variables.Count, prevStatus = 0;
+            int counter = 0, end = _variables.Count;
             bool couldSolve = true;
-            while(counter != end)
+            while (counter != end)
             {
+                ++_allSteps;
                 var pair = _variables.ElementAt(counter);
                 if (pair.Value.Value.Empty)
                 {
@@ -127,24 +113,24 @@ namespace TimetableGeneticGeneration
                 }
                 else
                 {
-                    if(pair.Value.TriedWholeDomain()) 
+                    if (pair.Value.TriedWholeDomain())
                     {
-                        if(counter == 0)  // in case of cant create timetable without conflicts
+                        if (counter == 0)  // in case of cant create timetable without conflicts
                         {
                             couldSolve = false;
                             break;
                         }
                         pair.Value.Value.Empty = true;
                         --counter;
+                        ++_backSteps;
                         continue;
                     }
-                    pair.Value.NextValue(prevStatus);
-                    prevStatus = 0;
+                    pair.Value.NextValue();
+
                 }
                 while (true)
                 {
-                    int checkResult = CheckIfFeets(pair.Value.Value, pair.Key.Group, _variables.Where(x => x.Key != pair.Key).ToDictionary(p => p.Key, p => p.Value));
-                    if (checkResult == 0)
+                    if (CheckIfFeets(pair.Value.Value, pair.Key.Group, _variables.Where(x => x.Key != pair.Key).ToDictionary(p => p.Key, p => p.Value)))
                     {
                         ++counter;
                         break;
@@ -153,45 +139,41 @@ namespace TimetableGeneticGeneration
                     {
                         pair.Value.Value.Empty = true;
                         --counter;
-                        prevStatus = checkResult;
+                        ++_backSteps;
                         break;
                     }
-                    pair.Value.NextValue(checkResult);
+                    pair.Value.NextValue();
                 }
             }
             Console.WriteLine(StringFromVars());
             return couldSolve;
         }
 
-        private int CheckIfFeets(Value value, String group, Dictionary<Variable, DomainSet> other)   //return: 0 - no conflicts, 1 - teacher conflict, 2 - audience conflict  
+        private bool CheckIfFeets(Value value, String group, Dictionary<Variable, DomainSet> other)   //return: 0 - no conflicts, 1 - teacher conflict, 2 - audience conflict  
         {
             other = other.Where(x => (x.Value.Value.DayValue == value.DayValue) &&
                                      (x.Value.Value.TimeValue == value.TimeValue) &&
                                      (!x.Value.Value.Empty)).ToDictionary(p => p.Key, p => p.Value);
 
-            if((other.Where(x => (x.Value.Value.TeacherValue == value.TeacherValue)).ToDictionary(p => p.Key, p => p.Value)).Count != 0)
+            if (((other.Where(x => (x.Value.Value.TeacherValue == value.TeacherValue)).ToDictionary(p => p.Key, p => p.Value)).Count != 0) ||
+                ((other.Where(x => (x.Value.Value.AudienceValue == value.AudienceValue)).ToDictionary(p => p.Key, p => p.Value)).Count != 0) ||
+                ((other.Where(x => (x.Key.Group == group) || (x.Key.Group.Contains(group)) ||
+                (group.Contains(x.Key.Group))).ToDictionary(p => p.Key, p => p.Value)).Count != 0))
             {
-                return 1;
+                return false;
             }
-            else if((other.Where(x => (x.Value.Value.AudienceValue == value.AudienceValue)).ToDictionary(p => p.Key, p => p.Value)).Count != 0)
-            {
-                return 2;
-            }
-            else if ((other.Where(x => (x.Key.Group == group) || (x.Key.Group.Contains(group)) || (group.Contains(x.Key.Group))).ToDictionary(p => p.Key, p => p.Value)).Count != 0)
-            {
-                return 3;
-            }
-            return 0;
+            return true;
         }
 
 
         private String StringFromVars()
         {
             String res = "";
-            foreach(var v in _variables)
+            foreach (var v in _variables)
             {
                 res = String.Concat(res, v.Key, " : ", v.Value, " \n");
             }
+            res = String.Concat(res, "Steps number: ", _allSteps, "\nBack steps done: ", _backSteps, "\n");
             return res;
         }
 
